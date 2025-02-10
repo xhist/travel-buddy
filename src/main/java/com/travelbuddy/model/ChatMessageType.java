@@ -1,4 +1,6 @@
 package com.travelbuddy.model;
 
-public class ChatMessageType {
+public enum ChatMessageType {
+    GROUP,
+    PRIVATE
 }

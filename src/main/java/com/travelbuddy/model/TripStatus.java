@@ -1,4 +1,7 @@
 package com.travelbuddy.model;
 
-public class TripStatus {
+public enum TripStatus {
+    UPCOMING,
+    ACTIVE,
+    COMPLETED
 }
