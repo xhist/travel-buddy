@@ -9,10 +9,8 @@ public class ProfileUpdateRequest {
     @Email
     @NotBlank
     private String email;
-    private String password;  // Optional: update if provided
     private String profilePicture;
-    // New fields for notification preferences:
+    private String bio;
     private Integer reminderDaysBefore;
-    // Expect time in HH:mm format; convert to LocalTime in the controller.
     private String reminderTime;
 }

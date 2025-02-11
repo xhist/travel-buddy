@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface PackingChecklistRepository extends JpaRepository<PackingChecklistItem, Long> {
     List<PackingChecklistItem> findByTripId(Long tripId);
+    List<PackingChecklistItem> findByTripIdAndUserId(Long tripId, Long userId);
 }

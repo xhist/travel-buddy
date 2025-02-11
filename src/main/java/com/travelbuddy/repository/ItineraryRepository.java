@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface ItineraryRepository extends JpaRepository<ItineraryItem, Long> {
     List<ItineraryItem> findByTripId(Long tripId);
+    List<ItineraryItem> findByTripIdAndUserId(Long tripId, Long userId);
 }

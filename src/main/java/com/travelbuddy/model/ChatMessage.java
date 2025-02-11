@@ -16,6 +16,7 @@ public class ChatMessage {
     private Long id;
     private String sender;
     private String recipient;
+    private Long tripId;
     private String content;
     private LocalDateTime timestamp;
     @Enumerated(EnumType.STRING)

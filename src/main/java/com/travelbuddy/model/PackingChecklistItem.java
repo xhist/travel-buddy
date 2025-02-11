@@ -15,8 +15,10 @@ public class PackingChecklistItem {
     private Long id;
     private String itemName;
     private String category;
-    private Boolean completed;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_id")
     private Trip trip;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 }

@@ -1,6 +1,7 @@
 package com.travelbuddy.controller;
 
 import com.travelbuddy.dto.ExpenseRequest;
+import com.travelbuddy.dto.ExpenseResponse;
 import com.travelbuddy.model.Expense;
 import com.travelbuddy.model.Trip;
 import com.travelbuddy.service.interfaces.IExpenseService;
@@ -11,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/expenses")
@@ -21,18 +23,16 @@ public class ExpenseController {
     private IExpenseService expenseService;
 
     @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/{tripId}")
+    public ResponseEntity<Set<ExpenseResponse>> getTripExpenses(@PathVariable Long tripId) {
+        final var tripExpenses = expenseService.getTripExpenses(tripId);
+        return ResponseEntity.ok(tripExpenses);
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping
-    public ResponseEntity<?> logExpense(@Valid @RequestBody ExpenseRequest request) {
-        Trip trip = new Trip();
-        trip.setId(request.getTripId());
-        Expense expense = Expense.builder()
-                .payer(request.getPayer())
-                .amount(request.getAmount())
-                .purpose(request.getPurpose())
-                .trip(trip)
-                .dateLogged(LocalDateTime.now())
-                .build();
-        Expense loggedExpense = expenseService.logExpense(expense);
-        return ResponseEntity.ok(loggedExpense);
+    public ResponseEntity<Set<ExpenseResponse>> logExpense(@Valid @RequestBody ExpenseRequest request) {
+        final var updatedExpenses = expenseService.logExpense(request);
+        return ResponseEntity.ok(updatedExpenses);
     }
 }

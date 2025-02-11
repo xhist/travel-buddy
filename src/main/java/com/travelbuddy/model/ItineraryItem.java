@@ -15,10 +15,10 @@ public class ItineraryItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String activityName;
-    private LocalDateTime activityDateTime;
-    private String location;
-    private String notes;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_id")
     private Trip trip;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 }

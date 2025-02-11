@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.LinkedList;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/trips")
@@ -26,10 +27,17 @@ public class TripController {
     @Autowired
     private ModelMapper modelMapper;
 
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping
+    public ResponseEntity<Set<TripResponse>> getTrips() {
+        final var trips = tripService.getTrips();
+        return ResponseEntity.ok(trips);
+    }
+
     // Create a trip – current user becomes organizer
     @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping
-    public ResponseEntity<?> createTrip(@Valid @RequestBody TripRequest tripRequest) {
+    public ResponseEntity<TripResponse> createTrip(@Valid @RequestBody TripRequest tripRequest) {
         CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Trip trip = Trip.builder()
                 .title(tripRequest.getTitle())
@@ -41,36 +49,33 @@ public class TripController {
                 .members(new LinkedList<>())
                 .build();
         trip.getMembers().add(currentUser.getUser());
-        Trip createdTrip = tripService.createTrip(trip);
+        final var createdTrip = tripService.createTrip(trip);
         log.info("Trip {} created", createdTrip.getId());
-        TripResponse response = modelMapper.map(createdTrip, TripResponse.class);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(createdTrip);
     }
 
     // Get trip details (public basic info)
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/{tripId}")
-    public ResponseEntity<?> getTrip(@PathVariable Long tripId) {
-        Trip trip = tripService.getTripById(tripId);
+    public ResponseEntity<TripResponse> getTrip(@PathVariable Long tripId) {
+        final var trip = tripService.getTripById(tripId);
         log.info("Trip {} retrieved", trip.getId());
-        TripResponse response = modelMapper.map(trip, TripResponse.class);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(trip);
     }
 
     // Update a trip (only organizer or admin)
     @PreAuthorize("hasRole('ROLE_USER') || hasRole('ROLE_ADMIN')")
     @PutMapping("/{tripId}")
-    public ResponseEntity<?> updateTrip(@PathVariable Long tripId, @Valid @RequestBody TripRequest tripRequest) {
+    public ResponseEntity<TripResponse> updateTrip(@PathVariable Long tripId, @Valid @RequestBody TripRequest tripRequest) {
         CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Trip existing = tripService.getTripById(tripId);
-        existing.setTitle(tripRequest.getTitle());
-        existing.setDestination(tripRequest.getDestination());
-        existing.setStartDate(tripRequest.getStartDate());
-        existing.setEndDate(tripRequest.getEndDate());
-        existing.setDescription(tripRequest.getDescription());
-        Trip updated = tripService.updateTrip(existing, currentUser.getUser());
-        TripResponse response = modelMapper.map(updated, TripResponse.class);
-        return ResponseEntity.ok(response);
+        final var trip = new Trip();
+        trip.setTitle(tripRequest.getTitle());
+        trip.setDestination(tripRequest.getDestination());
+        trip.setStartDate(tripRequest.getStartDate());
+        trip.setEndDate(tripRequest.getEndDate());
+        trip.setDescription(tripRequest.getDescription());
+        final var updatedTrip = tripService.updateTrip(trip, currentUser.getUser());
+        return ResponseEntity.ok(updatedTrip);
     }
 
     // Delete a trip (only organizer or admin)

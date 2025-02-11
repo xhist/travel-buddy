@@ -5,11 +5,19 @@ import com.travelbuddy.model.ChatMessageType;
 import com.travelbuddy.service.interfaces.IChatService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @Slf4j
@@ -18,21 +26,61 @@ public class ChatController {
     @Autowired
     private IChatService chatService;
 
-    // Group chat endpoint: broadcast to "/topic/group"
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
     @PreAuthorize("hasRole('ROLE_USER')")
-    @MessageMapping("/group.sendMessage")
-    @SendTo("/topic/group")
-    public ChatMessage sendGroupMessage(ChatMessage message) {
+    @MessageMapping("/chat.trip.{tripId}")
+    public ChatMessage sendGroupMessage(@Payload ChatMessage message, @DestinationVariable String tripId, SimpMessageHeaderAccessor headerAccessor) {
+        String username = headerAccessor.getUser().getName();
         message.setType(ChatMessageType.GROUP);
-        return chatService.saveMessage(message);
+        message.setSender(username);
+        ChatMessage savedMessage = chatService.saveMessage(message);
+        messagingTemplate.convertAndSend("/topic/trip/" + tripId, savedMessage);
+        return savedMessage;
     }
 
-    // Private chat: sent to a specific user’s queue (using send-to-user)
     @PreAuthorize("hasRole('ROLE_USER')")
     @MessageMapping("/private.sendMessage")
-    @SendToUser("/queue/private")
-    public ChatMessage sendPrivateMessage(ChatMessage message) {
+    public ChatMessage sendPrivateMessage(@Payload ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
+        String username = headerAccessor.getUser().getName();
         message.setType(ChatMessageType.PRIVATE);
-        return chatService.saveMessage(message);
+        message.setSender(username);
+
+        ChatMessage savedMessage = chatService.saveMessage(message);
+
+        // Send to recipient
+        messagingTemplate.convertAndSendToUser(
+                message.getRecipient(),
+                "/queue/private",
+                savedMessage
+        );
+
+        // Send back to sender
+        messagingTemplate.convertAndSendToUser(
+                username,
+                "/queue/private",
+                savedMessage
+        );
+
+        return savedMessage;
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @MessageMapping("/notification")
+    public void sendNotification(@Payload String notificationMessage, SimpMessageHeaderAccessor headerAccessor) {
+        String username = headerAccessor.getUser().getName();
+        messagingTemplate.convertAndSendToUser(
+                username,
+                "/queue/notifications",
+                notificationMessage
+        );
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/api/chat/trip/{tripId}/messages")
+    public ResponseEntity<List<ChatMessage>> getChatMessagesForTrip(@PathVariable Long tripId) {
+        List<ChatMessage> messages = chatService.getMessagesByTripId(tripId);
+        return ResponseEntity.ok(messages);
     }
 }

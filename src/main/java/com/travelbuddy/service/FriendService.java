@@ -1,15 +1,22 @@
 package com.travelbuddy.service;
 
+import com.travelbuddy.dto.FriendRequestDto;
+import com.travelbuddy.dto.UserDto;
 import com.travelbuddy.model.FriendRequest;
 import com.travelbuddy.model.User;
 import com.travelbuddy.repository.FriendRequestRepository;
 import com.travelbuddy.repository.UserRepository;
 import com.travelbuddy.service.interfaces.IFriendService;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -20,9 +27,12 @@ public class FriendService implements IFriendService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Override
     @Transactional
-    public FriendRequest sendFriendRequest(Long senderId, Long receiverId) {
+    public FriendRequestDto sendFriendRequest(Long senderId, Long receiverId) {
         if (friendRequestRepository.findBySenderIdAndReceiverId(senderId, receiverId).isPresent()) {
             throw new RuntimeException("Friend request already sent.");
         }
@@ -33,30 +43,45 @@ public class FriendService implements IFriendService {
         FriendRequest request = FriendRequest.builder()
                 .sender(sender)
                 .receiver(receiver)
-                .accepted(false)
                 .build();
         FriendRequest saved = friendRequestRepository.save(request);
         log.info("Friend request sent from {} to {}", sender.getUsername(), receiver.getUsername());
-        return saved;
+        return modelMapper.map(saved, FriendRequestDto.class);
     }
 
     @Override
     @Transactional
-    public void acceptFriendRequest(Long requestId) {
+    public Set<FriendRequestDto> acceptFriendRequest(Long requestId) {
         FriendRequest request = friendRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Friend request not found"));
-        request.setAccepted(true);
         User sender = request.getSender();
         User receiver = request.getReceiver();
         sender.getFriends().add(receiver);
         receiver.getFriends().add(sender);
-        friendRequestRepository.save(request);
+        friendRequestRepository.delete(request);
+        userRepository.save(sender);
+        userRepository.save(receiver);
         log.info("Friend request {} accepted", requestId);
+        return friendRequestRepository.findByReceiverId(request.getReceiver().getId())
+                .stream().map(dbRequest -> modelMapper.map(dbRequest, FriendRequestDto.class)).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<FriendRequestDto> declineFriendRequest(Long requestId) {
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Friend request not found"));
+        friendRequestRepository.delete(request);
+        log.info("Friend request {} declined", requestId);
+        return friendRequestRepository.findByReceiverId(request.getReceiver().getId()).stream()
+                .map(friendRequest ->
+                        new FriendRequestDto(friendRequest.getId(),
+                                modelMapper.map(friendRequest.getSender(), UserDto.class)))
+                .collect(Collectors.toSet());
     }
 
     @Override
     @Transactional
-    public void removeFriend(Long userId, Long friendId) {
+    public Set<UserDto> removeFriend(Long userId, Long friendId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         User friend = userRepository.findById(friendId)
@@ -69,10 +94,24 @@ public class FriendService implements IFriendService {
         } else {
             throw new RuntimeException("Users are not friends.");
         }
+        return user.getFriends().stream()
+                .map(userFriend -> modelMapper.map(userFriend, UserDto.class)).collect(Collectors.toSet());
     }
 
     @Override
-    public List<FriendRequest> getPendingRequests(Long receiverId) {
-        return friendRequestRepository.findByReceiverIdAndAcceptedFalse(receiverId);
+    public Set<FriendRequestDto> getPendingRequests(Long receiverId) {
+        return friendRequestRepository.findByReceiverId(receiverId).stream()
+                .map(friendRequest ->
+                    new FriendRequestDto(friendRequest.getId(),
+                            modelMapper.map(friendRequest.getSender(), UserDto.class)))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<UserDto> getUserFriends(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getFriends().stream()
+                .map(friend -> modelMapper.map(friend, UserDto.class)).collect(Collectors.toSet());
     }
 }

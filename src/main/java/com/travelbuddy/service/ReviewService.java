@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -17,15 +18,15 @@ public class ReviewService implements IReviewService {
     private ReviewRepository reviewRepository;
 
     @Override
-    public Review addReview(Review review) {
+    public Set<Review> addReview(Review review) {
         review.setDateReviewed(LocalDateTime.now());
-        Review savedReview = reviewRepository.save(review);
+        reviewRepository.save(review);
         log.info("Review added for {} by {}", review.getReviewee(), review.getReviewer());
-        return savedReview;
+        return reviewRepository.findByReviewee(review.getReviewee());
     }
 
     @Override
-    public List<Review> getReviewsForEntity(String reviewee) {
+    public Set<Review> getReviewsForUser(String reviewee) {
         return reviewRepository.findByReviewee(reviewee);
     }
 }

@@ -15,10 +15,10 @@ public class WeatherService implements IWeatherService {
 
     @Override
     public String getWeatherForCity(String city) {
-        String url = "http://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + apiKey;
-        RestTemplate restTemplate = new RestTemplate();
-        String result = restTemplate.getForObject(url, String.class);
+//        String url = "http://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + apiKey;
+//        RestTemplate restTemplate = new RestTemplate();
+//        String result = restTemplate.getForObject(url, String.class);
         log.info("Weather data fetched for city {}", city);
-        return result;
+        return "Random data";
     }
 }

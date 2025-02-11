@@ -15,9 +15,8 @@ public class Expense {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String payer;
     private BigDecimal amount;
-    private String purpose;
+    private String reason;
     private LocalDateTime dateLogged;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_id")

@@ -32,9 +32,6 @@ public class UserController {
         CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = currentUser.getUser();
         user.setEmail(request.getEmail());
-        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-            user.setPassword(userService.getPasswordEncoder().encode(request.getPassword()));
-        }
         user.setProfilePicture(request.getProfilePicture());
         // Update notification preferences
         try {

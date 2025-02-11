@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -32,14 +32,14 @@ public class ReviewController {
                 .comment(request.getComment())
                 .rating(request.getRating())
                 .build();
-        Review createdReview = reviewService.addReview(review);
-        return ResponseEntity.ok(createdReview);
+        final var updatedReviews = reviewService.addReview(review);
+        return ResponseEntity.ok(updatedReviews);
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/{reviewee}")
-    public ResponseEntity<List<Review>> getReviews(@PathVariable String reviewee) {
-        List<Review> reviews = reviewService.getReviewsForEntity(reviewee);
+    public ResponseEntity<Set<Review>> getReviews(@PathVariable String reviewee) {
+        Set<Review> reviews = reviewService.getReviewsForUser(reviewee);
         return ResponseEntity.ok(reviews);
     }
 }

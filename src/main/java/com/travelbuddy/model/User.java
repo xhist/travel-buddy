@@ -2,6 +2,7 @@ package com.travelbuddy.model;
 
 import lombok.*;
 import jakarta.persistence.*;
+
 import java.util.Set;
 
 @Entity
@@ -26,7 +27,7 @@ public class User {
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private Set<Role> roles;
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany
     @JoinTable(name = "user_friends",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "friend_id"))

@@ -1,6 +1,5 @@
 package com.travelbuddy.dto;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,9 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FriendRequestDto {
-    @NotNull
+public class UserDto {
     private Long id;
-    @NotNull
-    private UserDto sender;
+    private String username;
+    private String email;
+    private String profilePicture;
 }
