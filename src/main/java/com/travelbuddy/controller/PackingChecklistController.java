@@ -2,9 +2,6 @@ package com.travelbuddy.controller;
 
 import com.travelbuddy.dto.ChecklistRequest;
 import com.travelbuddy.dto.ChecklistResponse;
-import com.travelbuddy.dto.UserChecklistResponse;
-import com.travelbuddy.model.PackingChecklistItem;
-import com.travelbuddy.model.Trip;
 import com.travelbuddy.service.interfaces.IPackingChecklistService;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;

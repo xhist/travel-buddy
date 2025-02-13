@@ -2,7 +2,6 @@ package com.travelbuddy.service;
 
 import com.travelbuddy.dto.ChecklistRequest;
 import com.travelbuddy.dto.ChecklistResponse;
-import com.travelbuddy.dto.UserChecklistResponse;
 import com.travelbuddy.exception.ResourceNotFoundException;
 import com.travelbuddy.model.PackingChecklistItem;
 import com.travelbuddy.repository.PackingChecklistRepository;
@@ -10,10 +9,8 @@ import com.travelbuddy.repository.TripRepository;
 import com.travelbuddy.repository.UserRepository;
 import com.travelbuddy.service.interfaces.IPackingChecklistService;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 

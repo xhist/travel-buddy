@@ -1,6 +1,7 @@
 package com.travelbuddy.service.interfaces;
 
 import com.travelbuddy.dto.TripResponse;
+import com.travelbuddy.dto.UserDto;
 import com.travelbuddy.model.Trip;
 import com.travelbuddy.model.User;
 import java.util.List;
@@ -14,6 +15,8 @@ public interface ITripService {
     TripResponse getTripById(Long id);
     // Join and member management
     void joinTrip(Long tripId, User currentUser);
-    void approveJoinRequest(Long tripId, Long userId, User currentUser);
+    void approveJoinRequest(Long tripId, Long userId, Long organizerId);
+    void declineJoinRequest(Long tripId, Long userId, Long organizerId);
     void kickMember(Long tripId, Long memberId, User currentUser);
+    Set<UserDto> getJoinRequests(Long tripId);
 }

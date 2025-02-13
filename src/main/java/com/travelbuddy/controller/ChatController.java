@@ -31,7 +31,7 @@ public class ChatController {
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @MessageMapping("/chat.trip.{tripId}")
-    public ChatMessage sendGroupMessage(@Payload ChatMessage message, @DestinationVariable String tripId, SimpMessageHeaderAccessor headerAccessor) {
+    public ChatMessage sendTripMessage(@Payload ChatMessage message, @DestinationVariable String tripId, SimpMessageHeaderAccessor headerAccessor) {
         String username = headerAccessor.getUser().getName();
         message.setType(ChatMessageType.GROUP);
         message.setSender(username);

@@ -3,16 +3,23 @@ package com.travelbuddy.service;
 import com.travelbuddy.dto.TripResponse;
 import com.travelbuddy.dto.UserDto;
 import com.travelbuddy.model.Trip;
+import com.travelbuddy.model.TripJoinRequest;
 import com.travelbuddy.model.TripStatus;
 import com.travelbuddy.model.User;
+import com.travelbuddy.repository.TripJoinRequestRepository;
 import com.travelbuddy.repository.TripRepository;
 import com.travelbuddy.exception.ResourceNotFoundException;
+import com.travelbuddy.repository.UserRepository;
 import com.travelbuddy.service.interfaces.ITripService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +30,12 @@ public class TripService implements ITripService {
 
     @Autowired
     private TripRepository tripRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TripJoinRequestRepository joinRequestRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -126,34 +139,60 @@ public class TripService implements ITripService {
     @Override
     @Transactional
     public void joinTrip(Long tripId, User currentUser) {
+
+        // Check if user already has a pending request
+        if (!joinRequestRepository.findByUserIdAndTripId(currentUser.getId(), tripId).isEmpty()) {
+            throw new IllegalArgumentException("User %s already requested to join this trip".formatted(currentUser.getUsername()));
+        }
+
         final var trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id " + tripId));
-        // Check if already a member or already requested
-        if (trip.getMembers().stream().anyMatch(u -> u.getId().equals(currentUser.getId())) ||
-                (trip.getJoinRequests() != null && trip.getJoinRequests().stream().anyMatch(u -> u.getId().equals(currentUser.getId())))) {
-            throw new RuntimeException("Already a member or join request pending.");
-        }
-        trip.getJoinRequests().add(currentUser);
-        tripRepository.save(trip);
-        log.info("User {} requested to join trip {}", currentUser.getUsername(), trip.getId());
+        TripJoinRequest request = TripJoinRequest.builder()
+                .user(currentUser)
+                .trip(trip)
+                .requestDate(LocalDateTime.now())
+                .build();
+
+        joinRequestRepository.save(request);
+        log.info("User {} requested to join trip {}", currentUser.getUsername(), tripId);
     }
 
     @Override
     @Transactional
-    public void approveJoinRequest(Long tripId, Long userId, User currentUser) {
+    public void approveJoinRequest(Long tripId, Long userId, Long organizerId) {
         final var trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id " + tripId));
-        if (!trip.getOrganizer().getId().equals(currentUser.getId())) {
+        final var user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
+        if (!trip.getOrganizer().getId().equals(organizerId)) {
             throw new RuntimeException("Only the organizer can approve join requests.");
         }
-        User userToApprove = trip.getJoinRequests().stream()
-                .filter(u -> u.getId().equals(userId))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No such join request."));
-        trip.getJoinRequests().remove(userToApprove);
-        trip.getMembers().add(userToApprove);
-        tripRepository.save(trip);
-        log.info("User {} approved to join trip {}", userToApprove.getUsername(), trip.getId());
+        final var joinRequest = joinRequestRepository.findByUserIdAndTripId(userId, tripId);
+        if (joinRequest.isEmpty()) {
+            throw new RuntimeException("There is no pending request from %s to join trip to %s."
+                    .formatted(user.getUsername(), trip.getDestination()));
+        }
+        trip.getMembers().add(user);
+        joinRequestRepository.delete(joinRequest.get());
+        log.info("User {} approved to join trip {}", user.getUsername(), trip.getId());
+    }
+
+    @Override
+    public void declineJoinRequest(Long tripId, Long userId, Long organizerId) {
+        final var trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found with id " + tripId));
+        final var user = userRepository.findById(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
+        if (!trip.getOrganizer().getId().equals(organizerId)) {
+            throw new RuntimeException("Only the organizer can approve join requests.");
+        }
+        final var joinRequest = joinRequestRepository.findByUserIdAndTripId(userId, tripId);
+        if (joinRequest.isEmpty()) {
+            throw new RuntimeException("There is no pending request from %s to join trip to %s."
+                    .formatted(user.getUsername(), trip.getDestination()));
+        }
+        joinRequestRepository.delete(joinRequest.get());
+        log.info("Request of user {} to join trip {} was declined", user.getUsername(), trip.getId());
     }
 
     @Override
@@ -170,5 +209,14 @@ public class TripService implements ITripService {
         }
         tripRepository.save(trip);
         log.info("Member with id {} kicked from trip {}", memberId, trip.getId());
+    }
+
+    @Override
+    public Set<UserDto> getJoinRequests(Long tripId) {
+        final var tripRequests = joinRequestRepository.findByTripId(tripId);
+        return tripRequests.stream()
+                .map(request ->
+                        modelMapper.map(request.getUser(), UserDto.class))
+                .collect(Collectors.toSet());
     }
 }

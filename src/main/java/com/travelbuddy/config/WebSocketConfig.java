@@ -3,6 +3,8 @@ package com.travelbuddy.config;
 import com.travelbuddy.security.CustomUserDetails;
 import com.travelbuddy.security.CustomUserDetailsService;
 import com.travelbuddy.security.JwtTokenProvider;
+import com.travelbuddy.service.OnlineUserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -13,14 +15,23 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.*;
+import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
+
+import java.security.Principal;
 
 @Configuration
 @EnableWebSocketMessageBroker
+@Slf4j
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private OnlineUserService onlineUserService;
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
@@ -68,7 +79,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                             userDetails.getAuthorities()
                                     )
                             );
+
+                            onlineUserService.userConnected(username);
+
+                            log.info("User authenticated via WebSocket: {}", username);
                         }
+                    }
+                }
+                else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
+                    Principal user = accessor.getUser();
+                    if (user != null) {
+                        onlineUserService.userDisconnected(user.getName());
                     }
                 }
                 return message;

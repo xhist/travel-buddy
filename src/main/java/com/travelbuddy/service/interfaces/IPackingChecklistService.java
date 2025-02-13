@@ -2,9 +2,6 @@ package com.travelbuddy.service.interfaces;
 
 import com.travelbuddy.dto.ChecklistRequest;
 import com.travelbuddy.dto.ChecklistResponse;
-import com.travelbuddy.dto.UserChecklistResponse;
-import com.travelbuddy.model.PackingChecklistItem;
-import java.util.List;
 import java.util.Set;
 
 public interface IPackingChecklistService {

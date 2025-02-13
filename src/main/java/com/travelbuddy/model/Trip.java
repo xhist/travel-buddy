@@ -30,12 +30,6 @@ public class Trip {
             joinColumns = @JoinColumn(name = "trip_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private List<User> members;
-    // Users who requested to join and are pending approval
-    @ManyToMany
-    @JoinTable(name = "trip_join_requests",
-            joinColumns = @JoinColumn(name = "trip_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id"))
-    private List<User> joinRequests;
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PackingChecklistItem> packingChecklistItems;
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
