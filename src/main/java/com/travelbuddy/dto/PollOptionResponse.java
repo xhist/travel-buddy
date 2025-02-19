@@ -5,13 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDto {
+public class PollOptionResponse {
     private Long id;
-    private String username;
-    private String email;
-    private String profilePicture;
+    private String text;
+    private Set<Long> votes;
 }

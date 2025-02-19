@@ -8,9 +8,10 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public interface IItineraryService {
-    Set<ItineraryResponse> getItineraryByTrip(Long tripId);
-    Set<ItineraryResponse> getItineraryByTripAndUser(Long tripId, Long userId);
+    Set<ItineraryResponse> getItineraryByTrip(final Long tripId);
+    Set<ItineraryResponse> getItineraryByTripAndUser(final Long tripId, final Long userId);
     Set<ItineraryResponse> addToTripItinerary(final ItineraryItemRequest request);
     Set<ItineraryResponse> addToUserItinerary(final ItineraryItemRequest request);
-    CompletableFuture<byte[]> exportItineraryPdf(Long tripId);
+    void deleteItineraryItem(final Long itemId);
+    CompletableFuture<byte[]> exportItineraryPdf(final Long tripId);
 }

@@ -47,9 +47,9 @@ public class PresenceController {
     }
 
     private void broadcastUserPresence(String username, String status) {
-        User user = userService.findByUsername(username).orElseThrow();
+        final var user = userService.findByUsername(username);
         Map<String, Object> presenceMessage = new HashMap<>();
-        presenceMessage.put("userId", user.getId());
+        presenceMessage.put("id", user.getId());
         presenceMessage.put("username", username);
         presenceMessage.put("status", status);
         presenceMessage.put("profilePicture", user.getProfilePicture());

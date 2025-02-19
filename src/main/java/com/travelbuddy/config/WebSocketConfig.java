@@ -15,12 +15,14 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.WebSocketSession;
-import org.springframework.web.socket.config.annotation.*;
-import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 import java.security.Principal;
+import java.util.List;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -45,13 +47,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // Prefix for messages bound for the message broker (server -> client)
         registry.enableSimpleBroker("/topic", "/queue", "/user");
-
-        // Prefix for messages bound for @MessageMapping methods (client -> server)
         registry.setApplicationDestinationPrefixes("/app");
-
-        // Prefix for user-specific messages
         registry.setUserDestinationPrefix("/user");
     }
 
@@ -60,39 +57,58 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                StompHeaderAccessor accessor =
-                        MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    // Retrieve the token from the native headers (adjust header name if needed)
-                    String token = accessor.getFirstNativeHeader("Authorization");
+                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+
+                if (accessor != null) {
+                    // For all messages, including SEND
+                    String token = null;
+                    List<String> authorizationHeaders = accessor.getNativeHeader("Authorization");
+                    if (authorizationHeaders != null && !authorizationHeaders.isEmpty()) {
+                        token = authorizationHeaders.getFirst();
+                    }
+
                     if (token != null && token.startsWith("Bearer ")) {
                         token = token.substring(7);
-                        if (jwtTokenProvider.validateToken(token)) {
-                            String username = jwtTokenProvider.extractUsername(token);
-                            CustomUserDetails userDetails =
-                                    (CustomUserDetails) customUserDetailsService.loadUserByUsername(username);
-                            // Create an authentication object and set it in the accessor
-                            accessor.setUser(
-                                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                                            userDetails,
-                                            null,
-                                            userDetails.getAuthorities()
-                                    )
-                            );
+                        try {
+                            if (jwtTokenProvider.validateToken(token)) {
+                                String username = jwtTokenProvider.extractUsername(token);
+                                CustomUserDetails userDetails =
+                                        (CustomUserDetails) customUserDetailsService.loadUserByUsername(username);
 
-                            onlineUserService.userConnected(username);
+                                UsernamePasswordAuthenticationToken auth =
+                                        new UsernamePasswordAuthenticationToken(
+                                                userDetails,
+                                                null,
+                                                userDetails.getAuthorities()
+                                        );
 
-                            log.info("User authenticated via WebSocket: {}", username);
+                                SecurityContextHolder.getContext().setAuthentication(auth);
+                                accessor.setUser(auth);
+
+                                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                                    onlineUserService.userConnected(username);
+                                    log.info("User authenticated via WebSocket: {}", username);
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("WebSocket Authentication error", e);
+                        }
+                    }
+
+                    if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
+                        Principal user = accessor.getUser();
+                        if (user != null) {
+                            onlineUserService.userDisconnected(user.getName());
+                            SecurityContextHolder.clearContext();
                         }
                     }
                 }
-                else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
-                    Principal user = accessor.getUser();
-                    if (user != null) {
-                        onlineUserService.userDisconnected(user.getName());
-                    }
-                }
                 return message;
+            }
+
+            @Override
+            public void afterSendCompletion(Message<?> message, MessageChannel channel, boolean sent, Exception ex) {
+                SecurityContextHolder.clearContext();
             }
         });
     }

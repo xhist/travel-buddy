@@ -34,17 +34,9 @@ public class AuthController {
     @Autowired
     private JwtTokenProvider tokenProvider;
 
-    @Autowired
-    private ModelMapper modelMapper;
-
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
-        User user = User.builder()
-                .username(registerRequest.getUsername())
-                .email(registerRequest.getEmail())
-                .password(registerRequest.getPassword())
-                .build();
-        User createdUser = userService.registerUser(user);
+        final var createdUser = userService.registerUser(registerRequest);
         log.info("User {} registered", createdUser.getUsername());
         return ResponseEntity.ok(createdUser);
     }
@@ -52,8 +44,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody AuthRequest loginRequest) {
         try {
-            User user = userService.findByUsername(loginRequest.getUsername())
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + loginRequest.getUsername()));
+            final var user = userService.findByUsername(loginRequest.getUsername());
 
             if (!userService.getPasswordEncoder().matches(loginRequest.getPassword(), user.getPassword())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -61,7 +52,12 @@ public class AuthController {
             }
 
             String token = tokenProvider.generateToken(user.getUsername());
-            UserDto userDto = modelMapper.map(user, UserDto.class);
+            final var userDto = UserDto.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .profilePicture(user.getProfilePicture())
+                    .build();
 
             // Add additional logging
             log.info("User {} successfully authenticated", user.getUsername());
@@ -80,10 +76,14 @@ public class AuthController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String username = authentication.getName();
-            User user = userService.findByUsername(username)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+            final var user = userService.findByUsername(username);
 
-            return ResponseEntity.ok(modelMapper.map(user, UserDto.class));
+            return ResponseEntity.ok(UserDto.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .profilePicture(user.getProfilePicture())
+                    .build());
         } catch (Exception e) {
             log.error("Error getting current user: ", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

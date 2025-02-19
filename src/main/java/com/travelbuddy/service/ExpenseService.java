@@ -37,6 +37,14 @@ public class ExpenseService implements IExpenseService {
     }
 
     @Override
+    public void deleteExpense(Long expenseId) {
+        final var expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense %d not found"
+                        .formatted(expenseId)));
+        expenseRepository.delete(expense);
+    }
+
+    @Override
     public Set<ExpenseResponse> logExpense(final ExpenseRequest request) {
         final var trip = tripRepository.findById(request.getTripId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trip %d not found".formatted(request.getTripId())));

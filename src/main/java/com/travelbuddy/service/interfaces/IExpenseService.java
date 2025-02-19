@@ -8,4 +8,5 @@ import java.util.Set;
 public interface IExpenseService {
     Set<ExpenseResponse> logExpense(final ExpenseRequest request);
     Set<ExpenseResponse> getTripExpenses(final Long tripId);
+    void deleteExpense(final Long expenseId);
 }

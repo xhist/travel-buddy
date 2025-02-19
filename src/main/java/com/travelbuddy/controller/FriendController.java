@@ -2,15 +2,20 @@ package com.travelbuddy.controller;
 
 import com.travelbuddy.dto.FriendRequestDto;
 import com.travelbuddy.dto.UserDto;
-import com.travelbuddy.model.FriendRequest;
+import com.travelbuddy.exception.ResourceNotFoundException;
+import com.travelbuddy.model.User;
+import com.travelbuddy.security.CustomUserDetails;
 import com.travelbuddy.service.interfaces.IFriendService;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -72,5 +77,19 @@ public class FriendController {
     public ResponseEntity<Set<FriendRequestDto>> getPendingRequests(@PathVariable Long userId) {
         Set<FriendRequestDto> pending = friendService.getPendingRequests(userId);
         return ResponseEntity.ok(pending);
+    }
+
+    @GetMapping("/status/{username}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Map<String, Boolean>> getFriendStatus(@PathVariable String username) {
+        CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        final var status = Map.of("status", currentUser.getUser().getFriends().stream()
+                .anyMatch(user -> user.getUsername().equals(username)),
+                "hasPendingRequest", friendService.getPendingRequests(currentUser.getId()).stream()
+                        .anyMatch(friendRequest -> friendRequest.getSender()
+                                .getUsername().equals(username)));
+        return ResponseEntity.ok(status);
     }
 }

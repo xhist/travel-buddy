@@ -3,6 +3,7 @@ package com.travelbuddy.model;
 import lombok.*;
 import jakarta.persistence.*;
 
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -22,6 +23,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
     private String profilePicture;
+    private String bio;
     @Embedded
     private NotificationPreferences notificationPreferences;
     @ElementCollection(fetch = FetchType.EAGER)
@@ -32,4 +34,8 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "friend_id"))
     private Set<User> friends;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trip_id")
+    private List<Trip> trips;
 }

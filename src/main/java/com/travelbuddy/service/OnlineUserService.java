@@ -1,5 +1,6 @@
 package com.travelbuddy.service;
 
+import com.travelbuddy.dto.UserDto;
 import com.travelbuddy.dto.UserPresence;
 import com.travelbuddy.model.User;
 import com.travelbuddy.service.UserService;
@@ -22,7 +23,7 @@ public class OnlineUserService {
     private UserService userService;
 
     public void userConnected(String username) {
-        User user = userService.findByUsername(username).orElseThrow();
+        final var user = userService.findByUsername(username);
         UserPresence presence = new UserPresence(
                 user.getId(),
                 username,

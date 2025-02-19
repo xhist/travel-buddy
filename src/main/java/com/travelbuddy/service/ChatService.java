@@ -27,4 +27,9 @@ public class ChatService implements IChatService {
     public List<ChatMessage> getMessagesByTripId(Long tripId) {
         return chatMessageRepository.findByTripId(tripId);
     }
+
+    @Override
+    public List<ChatMessage> getPrivateMessages(String sender, String recipient) {
+        return chatMessageRepository.findPrivateMessages(sender, recipient);
+    }
 }

@@ -1,5 +1,6 @@
 package com.travelbuddy.service.interfaces;
 
+import com.travelbuddy.dto.TripRequest;
 import com.travelbuddy.dto.TripResponse;
 import com.travelbuddy.dto.UserDto;
 import com.travelbuddy.model.Trip;
@@ -9,14 +10,18 @@ import java.util.Set;
 
 public interface ITripService {
     Set<TripResponse> getTrips();
-    TripResponse createTrip(Trip trip);
-    TripResponse updateTrip(Trip trip, User currentUser);
-    void deleteTrip(Long tripId, User currentUser);
-    TripResponse getTripById(Long id);
+    TripResponse createTrip(final TripRequest trip, final User organizer);
+    TripResponse updateTrip(final TripRequest trip);
+    void deleteTrip(final Long tripId);
+    TripResponse getTripById(final Long id);
     // Join and member management
-    void joinTrip(Long tripId, User currentUser);
-    void approveJoinRequest(Long tripId, Long userId, Long organizerId);
-    void declineJoinRequest(Long tripId, Long userId, Long organizerId);
-    void kickMember(Long tripId, Long memberId, User currentUser);
-    Set<UserDto> getJoinRequests(Long tripId);
+    void joinTrip(final Long tripId, final Long userId);
+    void approveJoinRequest(final Long tripId, final Long userId);
+    void declineJoinRequest(final Long tripId, final Long userId);
+    void kickMember(final Long tripId, final Long memberId);
+    Set<UserDto> getJoinRequests(final Long tripId);
+    boolean isOrganizer(final Long tripId, final Long userId);
+    boolean isOrganizerForExpense(final Long expenseId, final Long userId);
+    boolean canDeleteChecklistItem(final Long itemId, final Long userId);
+    boolean canDeleteItineraryItem(final Long itemId, final Long userId);
 }

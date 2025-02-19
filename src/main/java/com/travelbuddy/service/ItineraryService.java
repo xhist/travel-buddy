@@ -19,6 +19,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -38,9 +39,9 @@ public class ItineraryService implements IItineraryService {
     public Set<ItineraryResponse> getItineraryByTrip(final Long tripId) {
         return itineraryRepository.findByTripId(tripId).stream()
                 .map(itinerary -> ItineraryResponse.builder()
+                        .id(itinerary.getId())
                         .activityName(itinerary.getActivityName())
                         .tripId(itinerary.getTrip().getId())
-                        .userId(itinerary.getUser().getId())
                         .build())
                 .collect(Collectors.toSet());
     }
@@ -50,6 +51,7 @@ public class ItineraryService implements IItineraryService {
         return itineraryRepository.findByTripIdAndUserId(tripId, userId).stream()
                 .map(itinerary ->
                     ItineraryResponse.builder()
+                            .id(itinerary.getId())
                             .activityName(itinerary.getActivityName())
                             .tripId(itinerary.getTrip().getId())
                             .userId(itinerary.getUser().getId())
@@ -59,18 +61,16 @@ public class ItineraryService implements IItineraryService {
 
     @Override
     public Set<ItineraryResponse> addToTripItinerary(final ItineraryItemRequest request) {
-        final var user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User %d not found".formatted(request.getUserId())));
         final var trip = tripRepository.findById(request.getTripId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trip %d not found".formatted(request.getTripId())));
         final var itineraryItem = ItineraryItem.builder()
                 .activityName(request.getActivityName())
-                .user(user)
                 .trip(trip)
                 .build();
         itineraryRepository.save(itineraryItem);
         return itineraryRepository.findByTripId(trip.getId()).stream()
                 .map(itinerary -> ItineraryResponse.builder()
+                        .id(itinerary.getId())
                         .activityName(itinerary.getActivityName())
                         .tripId(itinerary.getTrip().getId())
                         .build())
@@ -81,18 +81,29 @@ public class ItineraryService implements IItineraryService {
     public Set<ItineraryResponse> addToUserItinerary(ItineraryItemRequest request) {
         final var trip = tripRepository.findById(request.getTripId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trip %d not found".formatted(request.getTripId())));
+        final var user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User %d not found".formatted(request.getTripId())));
         final var itineraryItem = ItineraryItem.builder()
                 .activityName(request.getActivityName())
                 .trip(trip)
+                .user(user)
                 .build();
         itineraryRepository.save(itineraryItem);
-        return itineraryRepository.findByTripId(trip.getId()).stream()
+        return itineraryRepository.findByTripIdAndUserId(trip.getId(), user.getId()).stream()
                 .map(itinerary -> ItineraryResponse.builder()
+                        .id(itinerary.getId())
                         .activityName(itinerary.getActivityName())
                         .tripId(itinerary.getTrip().getId())
                         .userId(itinerary.getUser().getId())
                         .build())
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public void deleteItineraryItem(final Long itemId) {
+        final var itineraryItem = itineraryRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Itinerary item %d not found".formatted(itemId)));
+        itineraryRepository.delete(itineraryItem);
     }
 
     @Override

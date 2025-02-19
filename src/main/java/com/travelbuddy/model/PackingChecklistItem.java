@@ -14,7 +14,9 @@ public class PackingChecklistItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String itemName;
-    private String category;
+    @ManyToOne
+    @JoinColumn(name = "checklist_categories_id")
+    private ChecklistCategory category;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_id")
     private Trip trip;

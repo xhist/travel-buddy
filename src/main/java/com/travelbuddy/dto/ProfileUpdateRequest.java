@@ -6,11 +6,11 @@ import jakarta.validation.constraints.NotBlank;
 
 @Data
 public class ProfileUpdateRequest {
+    @NotBlank
+    private Long id;
     @Email
     @NotBlank
     private String email;
     private String profilePicture;
     private String bio;
-    private Integer reminderDaysBefore;
-    private String reminderTime;
 }

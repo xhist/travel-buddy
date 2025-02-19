@@ -5,6 +5,7 @@ import com.travelbuddy.dto.ExpenseResponse;
 import com.travelbuddy.model.Expense;
 import com.travelbuddy.model.Trip;
 import com.travelbuddy.service.interfaces.IExpenseService;
+import com.travelbuddy.service.interfaces.ITripService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,8 @@ public class ExpenseController {
 
     @Autowired
     private IExpenseService expenseService;
+    @Autowired
+    private ITripService tripService;
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/{tripId}")
@@ -29,10 +32,17 @@ public class ExpenseController {
         return ResponseEntity.ok(tripExpenses);
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("@tripService.isOrganizer(#request.tripId, authentication.principal.id)")
     @PostMapping
     public ResponseEntity<Set<ExpenseResponse>> logExpense(@Valid @RequestBody ExpenseRequest request) {
         final var updatedExpenses = expenseService.logExpense(request);
         return ResponseEntity.ok(updatedExpenses);
+    }
+
+    @PreAuthorize("@tripService.isOrganizerForExpense(#expenseId, authentication.principal.id)")
+    @DeleteMapping("/{expenseId}")
+    public ResponseEntity<String> deleteExpense(@PathVariable final Long expenseId) {
+        expenseService.deleteExpense(expenseId);
+        return ResponseEntity.ok("Expense deleted successfully");
     }
 }

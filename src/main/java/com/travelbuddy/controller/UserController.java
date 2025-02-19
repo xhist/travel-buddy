@@ -2,6 +2,8 @@
 package com.travelbuddy.controller;
 
 import com.travelbuddy.dto.ProfileUpdateRequest;
+import com.travelbuddy.dto.TripResponse;
+import com.travelbuddy.dto.UserDto;
 import com.travelbuddy.model.NotificationPreferences;
 import com.travelbuddy.model.User;
 import com.travelbuddy.security.CustomUserDetails;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/users")
@@ -24,29 +27,20 @@ public class UserController {
     @Autowired
     private IUserService userService;
 
-    @Autowired
-    private ModelMapper modelMapper;
-
     @PutMapping("/updateProfile")
-    public ResponseEntity<?> updateProfile(@Valid @RequestBody ProfileUpdateRequest request) {
-        CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = currentUser.getUser();
-        user.setEmail(request.getEmail());
-        user.setProfilePicture(request.getProfilePicture());
-        // Update notification preferences
-        try {
-            LocalTime time = (request.getReminderTime() != null)
-                    ? LocalTime.parse(request.getReminderTime()) : null;
-            user.setNotificationPreferences(NotificationPreferences.builder()
-                    .reminderDaysBefore(request.getReminderDaysBefore())
-                    .reminderTime(time)
-                    .build());
-        } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest().body("Invalid time format. Expected HH:mm");
-        }
-        // Assume an updateUser method (or re-save the user)
-        User updatedUser = userService.updateUser(user);  // For demonstration; ideally use updateUser()
+    public ResponseEntity<UserDto> updateProfile(@Valid @RequestBody ProfileUpdateRequest request) {
+        final var updatedUser = userService.updateUser(request);
         log.info("Profile updated for user {}", updatedUser.getUsername());
         return ResponseEntity.ok(updatedUser);
+    }
+
+    @GetMapping("/{userId}/trips")
+    public ResponseEntity<Set<TripResponse>> getUserTrips(@PathVariable final Long userId) {
+        return ResponseEntity.ok(userService.getUserTrips(userId));
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserDto> getUserProfile(@PathVariable final Long userId) {
+        return ResponseEntity.ok(userService.getUser(userId));
     }
 }

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -29,22 +30,20 @@ public class ChatController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    @PreAuthorize("hasRole('ROLE_USER')")
     @MessageMapping("/chat.trip.{tripId}")
-    public ChatMessage sendTripMessage(@Payload ChatMessage message, @DestinationVariable String tripId, SimpMessageHeaderAccessor headerAccessor) {
-        String username = headerAccessor.getUser().getName();
-        message.setType(ChatMessageType.GROUP);
-        message.setSender(username);
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public void sendTripMessage(@Payload ChatMessage message,
+                                @DestinationVariable String tripId,
+                                Principal principal) {
+        message.setSender(principal.getName());
         ChatMessage savedMessage = chatService.saveMessage(message);
         messagingTemplate.convertAndSend("/topic/trip/" + tripId, savedMessage);
-        return savedMessage;
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @MessageMapping("/private.sendMessage")
     public ChatMessage sendPrivateMessage(@Payload ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         String username = headerAccessor.getUser().getName();
-        message.setType(ChatMessageType.PRIVATE);
         message.setSender(username);
 
         ChatMessage savedMessage = chatService.saveMessage(message);
