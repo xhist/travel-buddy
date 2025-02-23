@@ -11,9 +11,11 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +32,7 @@ public class FriendController {
     @Autowired
     private ModelMapper modelMapper;
 
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("authentication.principal.id == #userId")
     @GetMapping("/{userId}")
     public ResponseEntity<Set<UserDto>> getFriendsList(@PathVariable Long userId) {
         final var friends = friendService.getUserFriends(userId)
@@ -39,7 +41,7 @@ public class FriendController {
     }
 
     // Send a friend request
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("authentication.principal.id === #userId && #userId != #receiverId")
     @PostMapping("/{userId}/request/{receiverId}")
     public ResponseEntity<FriendRequestDto> sendFriendRequest(@PathVariable Long userId, @PathVariable Long receiverId) {
         FriendRequestDto friendRequest = friendService.sendFriendRequest(userId, receiverId);
@@ -55,7 +57,7 @@ public class FriendController {
     }
 
     // Decline a friend request
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("authentication.principal.id == #userId")
     @PostMapping("/{userId}/decline/{requestId}")
     public ResponseEntity<Set<FriendRequestDto>> declineFriendRequest(@PathVariable Long requestId) {
         final var pendingRequests = friendService.declineFriendRequest(requestId);
@@ -63,7 +65,7 @@ public class FriendController {
     }
 
     // Remove a friend
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("authentication.principal.id == #userId")
     @DeleteMapping("/user/{userId}/friends/{friendId}")
     public ResponseEntity<Set<UserDto>> removeFriend(@PathVariable Long userId, @PathVariable Long friendId) {
         final var friends = friendService.removeFriend(userId, friendId)
@@ -72,7 +74,7 @@ public class FriendController {
     }
 
     // Get pending friend requests (for the current user)
-    @PreAuthorize("hasRole('ROLE_USER')")
+    @PreAuthorize("authentication.principal.id == #userId")
     @GetMapping("/{userId}/pending")
     public ResponseEntity<Set<FriendRequestDto>> getPendingRequests(@PathVariable Long userId) {
         Set<FriendRequestDto> pending = friendService.getPendingRequests(userId);
@@ -81,15 +83,7 @@ public class FriendController {
 
     @GetMapping("/status/{username}")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResponseEntity<Map<String, Boolean>> getFriendStatus(@PathVariable String username) {
-        CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-
-        final var status = Map.of("status", currentUser.getUser().getFriends().stream()
-                .anyMatch(user -> user.getUsername().equals(username)),
-                "hasPendingRequest", friendService.getPendingRequests(currentUser.getId()).stream()
-                        .anyMatch(friendRequest -> friendRequest.getSender()
-                                .getUsername().equals(username)));
-        return ResponseEntity.ok(status);
+    public ResponseEntity<Map<String, Boolean>> getFriendStatus(@PathVariable String username, @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(friendService.getFriendStatus(username, principal.getId()));
     }
 }

@@ -6,6 +6,7 @@ import com.travelbuddy.model.FriendRequest;
 import com.travelbuddy.model.User;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface IFriendService {
@@ -15,4 +16,5 @@ public interface IFriendService {
     Set<UserDto> removeFriend(Long userId, Long friendId);
     Set<FriendRequestDto> getPendingRequests(Long receiverId);
     Set<UserDto> getUserFriends(Long userId);
+    Map<String, Boolean> getFriendStatus(String username, Long userId);
 }

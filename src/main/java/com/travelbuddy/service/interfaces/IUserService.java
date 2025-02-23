@@ -11,9 +11,9 @@ import java.util.Set;
 public interface IUserService {
     UserDto registerUser(final RegisterRequest registerRequest);
     UserDto updateUser(final ProfileUpdateRequest updateRequest);
-    UserDto getUser(final Long userId);
+    UserDto getUser(final String username);
     User findByUsername(final String username);
     // Expose the PasswordEncoder for checking passwords.
     org.springframework.security.crypto.password.PasswordEncoder getPasswordEncoder();
-    Set<TripResponse> getUserTrips(final Long userId);
+    Set<TripResponse> getUserTrips(final String userId);
 }

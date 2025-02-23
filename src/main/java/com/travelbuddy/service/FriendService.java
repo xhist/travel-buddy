@@ -2,6 +2,7 @@ package com.travelbuddy.service;
 
 import com.travelbuddy.dto.FriendRequestDto;
 import com.travelbuddy.dto.UserDto;
+import com.travelbuddy.exception.ResourceNotFoundException;
 import com.travelbuddy.model.FriendRequest;
 import com.travelbuddy.model.User;
 import com.travelbuddy.repository.FriendRequestRepository;
@@ -15,6 +16,7 @@ import jakarta.transaction.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,8 +61,8 @@ public class FriendService implements IFriendService {
         sender.getFriends().add(receiver);
         receiver.getFriends().add(sender);
         friendRequestRepository.delete(request);
-        userRepository.save(sender);
-        userRepository.save(receiver);
+        userRepository.saveAndFlush(sender);
+        userRepository.saveAndFlush(receiver);
         log.info("Friend request {} accepted", requestId);
         return friendRequestRepository.findByReceiverId(request.getReceiver().getId())
                 .stream().map(dbRequest -> modelMapper.map(dbRequest, FriendRequestDto.class)).collect(Collectors.toSet());
@@ -113,5 +115,19 @@ public class FriendService implements IFriendService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return user.getFriends().stream()
                 .map(friend -> modelMapper.map(friend, UserDto.class)).collect(Collectors.toSet());
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Boolean> getFriendStatus(String username, Long currentUserId) {
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return Map.of(
+                "status", currentUser.getFriends().stream()
+                        .anyMatch(friend -> friend.getUsername().equals(username)),
+                "hasPendingRequest", friendRequestRepository.findByReceiverId(currentUserId).stream()
+                        .anyMatch(request -> request.getSender().getUsername().equals(username))
+        );
     }
 }

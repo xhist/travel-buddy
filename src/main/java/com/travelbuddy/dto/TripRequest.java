@@ -7,7 +7,6 @@ import java.time.LocalDate;
 
 @Data
 public class TripRequest {
-    @NotBlank
     private Long id;
     @NotBlank
     private String title;

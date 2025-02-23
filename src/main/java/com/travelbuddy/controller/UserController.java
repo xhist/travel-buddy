@@ -34,13 +34,13 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    @GetMapping("/{userId}/trips")
-    public ResponseEntity<Set<TripResponse>> getUserTrips(@PathVariable final Long userId) {
-        return ResponseEntity.ok(userService.getUserTrips(userId));
+    @GetMapping("/{username}/trips")
+    public ResponseEntity<Set<TripResponse>> getUserTrips(@PathVariable final String username) {
+        return ResponseEntity.ok(userService.getUserTrips(username));
     }
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<UserDto> getUserProfile(@PathVariable final Long userId) {
-        return ResponseEntity.ok(userService.getUser(userId));
+    @GetMapping("/{username}")
+    public ResponseEntity<UserDto> getUserProfile(@PathVariable final String username) {
+        return ResponseEntity.ok(userService.getUser(username));
     }
 }

@@ -1,8 +1,10 @@
 package com.travelbuddy.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,13 +31,26 @@ public class User {
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private Set<Role> roles;
-    @ManyToMany
-    @JoinTable(name = "user_friends",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "friend_id"))
+    @ManyToMany(fetch = FetchType.EAGER)
+//    @JoinTable(name = "user_friends",
+//            joinColumns = @JoinColumn(name = "user_id"),
+//            inverseJoinColumns = @JoinColumn(name = "friend_id"))
+//    @JsonManagedReference("friends")
+    private Set<User> friendsReference = new HashSet<>();
+
+    @ManyToMany(mappedBy="friendsReference")
     private Set<User> friends;
 
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_id")
     private List<Trip> trips;
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                "}";
+    }
 }

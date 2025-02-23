@@ -73,10 +73,10 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public UserDto getUser(Long userId) {
-        final var user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User %d does not exist"
-                        .formatted(userId)));
+    public UserDto getUser(String username) {
+        final var user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User %s does not exist"
+                        .formatted(username)));
         return UserDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -98,10 +98,10 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Set<TripResponse> getUserTrips(final Long userId) {
-        final var user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User %d not found"
-                        .formatted(userId)));
+    public Set<TripResponse> getUserTrips(final String username) {
+        final var user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User %s not found"
+                        .formatted(username)));
         return user.getTrips().stream()
                 .map(trip -> TripResponse.builder()
                         .id(trip.getId())
