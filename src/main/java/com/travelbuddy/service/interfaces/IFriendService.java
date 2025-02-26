@@ -11,8 +11,8 @@ import java.util.Set;
 
 public interface IFriendService {
     FriendRequestDto sendFriendRequest(Long senderId, Long receiverId);
-    Set<FriendRequestDto> acceptFriendRequest(Long requestId);
-    Set<FriendRequestDto> declineFriendRequest(Long requestId);
+    Set<FriendRequestDto> acceptFriendRequest(Long friendshipId, Long userId);
+    Set<FriendRequestDto> declineFriendRequest(Long friendshipId, Long userId);
     Set<UserDto> removeFriend(Long userId, Long friendId);
     Set<FriendRequestDto> getPendingRequests(Long receiverId);
     Set<UserDto> getUserFriends(Long userId);

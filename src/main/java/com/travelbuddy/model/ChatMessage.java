@@ -1,5 +1,8 @@
 package com.travelbuddy.model;
 
+import com.travelbuddy.chat.MessageContent;
+import com.travelbuddy.chat.MessageContentConverter;
+import com.travelbuddy.chat.MessageType;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -12,18 +15,22 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChatMessage {
+public class ChatMessage<T extends MessageContent> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String sender;
     private String recipient;
     private Long tripId;
-    private String content;
-    private LocalDateTime timestamp;
+
     @Enumerated(EnumType.STRING)
-    private ChatMessageType type;
-    private String fileName;  // For file messages
+    private MessageType type;
+
+    @Convert(converter = MessageContentConverter.class)
+    private T content;
+
+    private LocalDateTime timestamp;
 
     @ElementCollection
     @CollectionTable(name = "message_reactions",
