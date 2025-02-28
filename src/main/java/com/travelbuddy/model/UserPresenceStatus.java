@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 @Builder
 public class UserPresenceStatus {
     private String username;
+    private Long userId;
+    private String profilePicture;
     private LocalDateTime lastSeen;
     private boolean typing;
 }

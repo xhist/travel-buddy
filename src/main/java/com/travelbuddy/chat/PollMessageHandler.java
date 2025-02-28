@@ -1,5 +1,6 @@
 package com.travelbuddy.chat;
 
+import com.travelbuddy.dto.PollOptionResponse;
 import com.travelbuddy.dto.PollRequest;
 import com.travelbuddy.model.ChatMessage;
 import com.travelbuddy.service.PollService;
@@ -9,22 +10,31 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class PollMessageHandler implements MessageHandler<PollMessageContent> {
+public class PollMessageHandler implements MessageHandler {
 
     @Autowired
     private final PollService pollService;
 
     @Override
-    public ChatMessage<PollMessageContent> handle(ChatMessage<PollMessageContent> message) {
+    public ChatMessage handle(ChatMessage message) {
         if (message.getTripId() == null) {
             throw new IllegalArgumentException("Trip id cannot be null for polling!");
         }
-        final var pollContent = message.getContent();
+
+        if (!(message.getContent() instanceof PollMessageContent pollContent)) {
+            throw new IllegalArgumentException("Expected PollMessageContent but got " +
+                    (message.getContent() != null ? message.getContent().getClass().getSimpleName() : "null"));
+        }
+
+        final var pollOptionsNames = pollContent.getOptions().stream()
+                .map(PollOptionResponse::getText).toList();
         final var pollRequest = PollRequest.builder()
                 .question(pollContent.getQuestion())
-                .options(pollContent.getOptions())
+                .options(pollOptionsNames)
                 .build();
-        pollService.createPoll(message.getTripId(), message.getContent().getSenderId(), pollRequest);
+        final var poll = pollService.createPoll(message.getTripId(), pollContent.getSenderId(), pollRequest);
+        pollContent.setId(poll.getId());
+        pollContent.setOptions(poll.getOptions());
         return message;
     }
 

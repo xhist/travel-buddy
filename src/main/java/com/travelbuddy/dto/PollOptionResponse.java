@@ -14,5 +14,5 @@ import java.util.Set;
 public class PollOptionResponse {
     private Long id;
     private String text;
-    private Set<Long> votes;
+    private Set<UserDto> votes;
 }

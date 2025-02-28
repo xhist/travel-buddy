@@ -23,10 +23,12 @@ public class ChatRoom {
     @ElementCollection
     @CollectionTable(name = "chat_room_online_users",
             joinColumns = @JoinColumn(name = "room_id"))
+    @Builder.Default
     private Set<String> onlineUsers = new HashSet<>();
 
     @ElementCollection
     @CollectionTable(name = "chat_room_user_status",
             joinColumns = @JoinColumn(name = "room_id"))
+    @Builder.Default
     private Set<UserPresenceStatus> userStatuses = new HashSet<>();
 }

@@ -15,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChatMessage<T extends MessageContent> {
+public class ChatMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,10 +27,18 @@ public class ChatMessage<T extends MessageContent> {
     @Enumerated(EnumType.STRING)
     private MessageType type;
 
+    /**
+     * The message content stored as JSON in the database.
+     * Using a custom converter to handle polymorphic content types.
+     */
     @Convert(converter = MessageContentConverter.class)
-    private T content;
+    @Column(name = "content", columnDefinition = "TEXT")
+    private MessageContent content;
 
     private LocalDateTime timestamp;
+
+    @Builder.Default
+    private boolean isRead = false;
 
     @ElementCollection
     @CollectionTable(name = "message_reactions",

@@ -4,9 +4,14 @@ import com.travelbuddy.model.ChatMessage;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TextMessageHandler implements MessageHandler<TextMessageContent> {
+public class TextMessageHandler implements MessageHandler {
     @Override
-    public ChatMessage<TextMessageContent> handle(ChatMessage<TextMessageContent> message) {
+    public ChatMessage handle(ChatMessage message) {
+        // Validate the content type
+        if (!(message.getContent() instanceof TextMessageContent)) {
+            throw new IllegalArgumentException("Expected TextMessageContent but got " +
+                    (message.getContent() != null ? message.getContent().getClass().getSimpleName() : "null"));
+        }
         return message;
     }
 

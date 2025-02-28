@@ -3,6 +3,7 @@ package com.travelbuddy.controller;
 import com.travelbuddy.dto.ChecklistCategoryResponse;
 import com.travelbuddy.dto.ChecklistRequest;
 import com.travelbuddy.dto.ChecklistResponse;
+import com.travelbuddy.security.SecurityEvaluator;
 import com.travelbuddy.service.interfaces.IPackingChecklistService;
 import com.travelbuddy.service.interfaces.ITripService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,10 @@ public class PackingChecklistController {
     @Autowired
     private ITripService tripService;
 
-    @PreAuthorize("@tripService.isOrganizer(#tripId, authentication.principal.id)")
+    @Autowired
+    private SecurityEvaluator securityEvaluator;
+
+    @PreAuthorize("@securityEvaluator.isOrganizer(#tripId, authentication.principal.id)")
     @PostMapping("/{tripId}")
     public ResponseEntity<Set<ChecklistResponse>> addToTripChecklist(@PathVariable Long tripId, @Valid @RequestBody ChecklistRequest request) {
         if (tripId == null || request.getTripId() == null || !Objects.equals(tripId, request.getTripId())) {
@@ -37,7 +41,7 @@ public class PackingChecklistController {
         return ResponseEntity.ok(updatedTripChecklist);
     }
 
-    @PreAuthorize("hasRole('ROLE_USER') && #authentication.principal.id == #userId")
+    @PreAuthorize("@securityEvaluator.isSameUser(#request.userId)")
     @PostMapping("/{tripId}/{userId}")
     public ResponseEntity<Set<ChecklistResponse>> addToUserChecklist(@Valid @RequestBody ChecklistRequest request) {
         final var updatedTripChecklist = checklistService.addToUserChecklist(request);
@@ -51,7 +55,7 @@ public class PackingChecklistController {
         return ResponseEntity.ok(tripChecklist);
     }
 
-    @PreAuthorize("hasRole('ROLE_USER') && #authentication.principal.id == #userId")
+    @PreAuthorize("@securityEvaluator.isSameUser(#request.userId)")
     @GetMapping("/{tripId}/{userId}")
     public ResponseEntity<Set<ChecklistResponse>> getUserChecklistByTrip(@PathVariable Long tripId, @PathVariable Long userId) {
         final var userChecklist = checklistService.getChecklistByTripAndUser(tripId, userId);
@@ -65,7 +69,7 @@ public class PackingChecklistController {
         return ResponseEntity.ok(userChecklist);
     }
 
-    @PreAuthorize("@tripService.canDeleteChecklistItem(#id, authentication.principal.id)")
+    @PreAuthorize("@securityEvaluator.canDeleteChecklistItem(#id, authentication.principal.id)")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteChecklistItem(@PathVariable Long id) {
         checklistService.deleteChecklistItem(id);

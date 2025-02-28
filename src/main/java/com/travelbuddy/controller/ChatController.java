@@ -1,9 +1,11 @@
 package com.travelbuddy.controller;
 
 import com.travelbuddy.chat.MessageContent;
+import com.travelbuddy.chat.MessageType;
 import com.travelbuddy.model.ChatMessage;
 import com.travelbuddy.security.CustomUserDetails;
 import com.travelbuddy.service.interfaces.IChatService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -17,11 +19,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
+@Slf4j
 public class ChatController {
 
     @Autowired
@@ -31,30 +35,41 @@ public class ChatController {
     private SimpMessagingTemplate simpMessagingTemplate;
 
     @GetMapping("/messages/trip/{tripId}")
-    public ResponseEntity<List<ChatMessage<MessageContent>>> getTripMessages(
+    public ResponseEntity<List<ChatMessage>> getTripMessages(
             @PathVariable Long tripId,
             @RequestParam(required = false) Long before,
             @RequestParam(defaultValue = "20") int limit) {
-        List<ChatMessage<MessageContent>> messages = chatService.getMessagesByTripId(tripId, before, limit);
+        List<ChatMessage> messages = chatService.getMessagesByTripId(tripId, before, limit);
+
+        // Ensure content is available in a predictable format for the frontend
+        messages.forEach(message -> {
+            if (message.getContent() != null) {
+                // Add type information to the message to help the frontend
+                if (message.getType() == null) {
+                    message.setType(MessageType.valueOf(message.getContent().getClass().getSimpleName()));
+                }
+            }
+        });
+
         return ResponseEntity.ok(messages);
     }
 
     @PostMapping("/messages/{messageId}/reactions")
-    public ResponseEntity<ChatMessage<MessageContent>> addReaction(
+    public ResponseEntity<ChatMessage> addReaction(
             @PathVariable Long messageId,
             @RequestBody Map<String, String> request,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ChatMessage<MessageContent> message = chatService.addReaction(messageId, currentUser.getId(), request.get("reactionType"));
+        ChatMessage message = chatService.addReaction(messageId, currentUser.getUsername(), request.get("reactionType"));
         return ResponseEntity.ok(message);
     }
 
     @GetMapping("/messages/private/{username}")
-    public ResponseEntity<List<ChatMessage<MessageContent>>> getPrivateMessages(
+    public ResponseEntity<List<ChatMessage>> getPrivateMessages(
             @PathVariable String username,
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @RequestParam(required = false) Long before,
             @RequestParam(defaultValue = "20") int limit) {
-        List<ChatMessage<MessageContent>> messages = chatService.getPrivateMessages(
+        List<ChatMessage> messages = chatService.getPrivateMessages(
                 currentUser.getUsername(),
                 username,
                 before,
@@ -63,10 +78,31 @@ public class ChatController {
         return ResponseEntity.ok(messages);
     }
 
-    // This endpoint remains in WebSocketConfig.java but modified to handle reactions
+    /**
+     * Get unread messages count for the current user
+     */
+    @GetMapping("/unread")
+    public ResponseEntity<List<Map<String, Object>>> getUnreadMessages(
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        return ResponseEntity.ok(chatService.getUnreadMessageCounts(currentUser.getUsername()));
+    }
+
+    /**
+     * Mark messages from a specific sender as read
+     */
+    @PostMapping("/markAsRead/{sender}")
+    public ResponseEntity<Map<String, Object>> markMessagesAsRead(
+            @PathVariable String sender,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        chatService.markMessagesAsRead(sender, currentUser.getUsername());
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        return ResponseEntity.ok(response);
+    }
+
     @MessageMapping("/chat.trip.{tripId}")
     @SendTo("/topic/trip/{tripId}")
-    public ChatMessage<MessageContent> sendTripMessage(@Payload ChatMessage<MessageContent> message,
+    public ChatMessage sendTripMessage(@Payload ChatMessage message,
                                        @DestinationVariable Long tripId,
                                        Principal principal) {
         message.setSender(principal.getName());
@@ -76,12 +112,12 @@ public class ChatController {
     }
 
     @MessageMapping("/chat.private")
-    public ChatMessage<MessageContent> sendPrivateMessage(@Payload ChatMessage<MessageContent> message,
+    public ChatMessage sendPrivateMessage(@Payload ChatMessage message,
                                           Principal principal,
                                           SimpMessageHeaderAccessor headerAccessor) {
         message.setSender(principal.getName());
         message.setTimestamp(LocalDateTime.now());
-        ChatMessage<MessageContent> savedMessage = chatService.processMessage(message);
+        ChatMessage savedMessage = chatService.processMessage(message);
 
         // Send to recipient
         simpMessagingTemplate.convertAndSendToUser(
@@ -98,5 +134,21 @@ public class ChatController {
         );
 
         return savedMessage;
+    }
+
+    @MessageMapping("/chat.typing")
+    public void updateTypingStatus(Principal principal, @Payload Map<String, Object> payload) {
+        String recipient = (String) payload.get("recipient");
+        boolean typing = (boolean) payload.get("typing");
+
+        Map<String, Object> typingStatus = new HashMap<>();
+        typingStatus.put("sender", principal.getName());
+        typingStatus.put("typing", typing);
+
+        simpMessagingTemplate.convertAndSendToUser(
+                recipient,
+                "/queue/typing",
+                typingStatus
+        );
     }
 }

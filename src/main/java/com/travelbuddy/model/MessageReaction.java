@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class MessageReaction {
-    private Long userId;
+    private String username;
     private String reactionType;
     private LocalDateTime timestamp;
 }

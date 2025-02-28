@@ -5,6 +5,7 @@ import com.travelbuddy.dto.TripResponse;
 import com.travelbuddy.dto.UserDto;
 import com.travelbuddy.repository.TripJoinRequestRepository;
 import com.travelbuddy.security.CustomUserDetails;
+import com.travelbuddy.security.SecurityEvaluator;
 import com.travelbuddy.service.interfaces.ITripService;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -29,6 +30,9 @@ public class TripController {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private SecurityEvaluator securityEvaluator;
 
     @Autowired
     private TripJoinRequestRepository joinRequestRepository;
@@ -59,7 +63,7 @@ public class TripController {
         return ResponseEntity.ok(trip);
     }
 
-    @PreAuthorize("@tripService.isOrganizer(#tripId, authentication.principal.id)")
+    @PreAuthorize("@securityEvaluator.isOrganizer(#tripId, authentication.principal.id)")
     @GetMapping("/{tripId}/pendingRequests")
     public ResponseEntity<Set<UserDto>> getTripRequests(@PathVariable Long tripId) {
         final var requests = tripService.getJoinRequests(tripId);
@@ -68,7 +72,7 @@ public class TripController {
     }
 
     // Update a trip (only organizer or admin)
-    @PreAuthorize("hasRole('ROLE_ADMIN') || @tripService.isOrganizer(#tripId, authentication.principal.id)")
+    @PreAuthorize("hasRole('ROLE_ADMIN') || @securityEvaluator.isOrganizer(#tripId, authentication.principal.id)")
     @PutMapping
     public ResponseEntity<TripResponse> updateTrip(@Valid @RequestBody TripRequest tripRequest) {
         CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -77,7 +81,7 @@ public class TripController {
     }
 
     // Delete a trip (only organizer or admin)
-    @PreAuthorize("hasRole('ROLE_ADMIN') || @tripService.isOrganizer(#tripId, authentication.principal.id)")
+    @PreAuthorize("hasRole('ROLE_ADMIN') || @securityEvaluator.isOrganizer(#tripId, authentication.principal.id)")
     @DeleteMapping("/{tripId}")
     public ResponseEntity<?> deleteTrip(@PathVariable Long tripId) {
         CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -102,7 +106,7 @@ public class TripController {
     }
 
     // Approve a join request (only organizer)
-    @PreAuthorize("@tripService.isOrganizer(#tripId, authentication.principal.id)")
+    @PreAuthorize("@securityEvaluator.isOrganizer(#tripId, authentication.principal.id)")
     @PostMapping("/{tripId}/approve/{userId}")
     public ResponseEntity<?> approveJoinRequest(@PathVariable Long tripId, @PathVariable Long userId) {
         CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -111,7 +115,7 @@ public class TripController {
     }
 
     // Approve a join request (only organizer)
-    @PreAuthorize("@tripService.isOrganizer(#tripId, authentication.principal.id)")
+    @PreAuthorize("@securityEvaluator.isOrganizer(#tripId, authentication.principal.id)")
     @PostMapping("/{tripId}/decline/{userId}")
     public ResponseEntity<?> declineJoinRequest(@PathVariable Long tripId, @PathVariable Long userId) {
         CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -120,7 +124,7 @@ public class TripController {
     }
 
     // Kick a member (only organizer)
-    @PreAuthorize("@tripService.isOrganizer(#tripId, authentication.principal.id)")
+    @PreAuthorize("@securityEvaluator.isOrganizer(#tripId, authentication.principal.id)")
     @PostMapping("/{tripId}/kick/{userId}")
     public ResponseEntity<?> kickMember(@PathVariable Long tripId, @PathVariable Long userId) {
         CustomUserDetails currentUser = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

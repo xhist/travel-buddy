@@ -3,6 +3,7 @@ package com.travelbuddy.controller;
 import com.travelbuddy.dto.ItineraryItemRequest;
 import com.travelbuddy.dto.ItineraryResponse;
 import com.travelbuddy.model.ItineraryItem;
+import com.travelbuddy.security.SecurityEvaluator;
 import com.travelbuddy.service.interfaces.IItineraryService;
 import com.travelbuddy.service.interfaces.ITripService;
 import jakarta.validation.Valid;
@@ -28,6 +29,9 @@ public class ItineraryController {
     @Autowired
     private ITripService tripService;
 
+    @Autowired
+    private SecurityEvaluator securityEvaluator;
+
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/{tripId}")
     public ResponseEntity<Set<ItineraryResponse>> getTripItinerary(@PathVariable Long tripId) {
@@ -40,19 +44,19 @@ public class ItineraryController {
         return ResponseEntity.ok(itineraryService.getItineraryByTripAndUser(tripId, userId));
     }
 
-    @PreAuthorize("@tripService.isOrganizer(#tripId, authentication.principal.id)")
+    @PreAuthorize("@securityEvaluator.isOrganizer(#request.tripId, authentication.principal.id)")
     @PostMapping("/{tripId}")
     public ResponseEntity<Set<ItineraryResponse>> addToTripItinerary(@Valid @RequestBody final ItineraryItemRequest request) {
         return ResponseEntity.ok(itineraryService.addToTripItinerary(request));
     }
 
-    @PreAuthorize("hasRole('ROLE_USER') && authentication.principal.id == #request.userId")
+    @PreAuthorize("@securityEvaluator.isSameUser(#request.userId)")
     @PostMapping("/{tripId}/{userId}")
     public ResponseEntity<Set<ItineraryResponse>> addToUserItinerary(@Valid @RequestBody final ItineraryItemRequest request) {
         return ResponseEntity.ok(itineraryService.addToUserItinerary(request));
     }
 
-    @PreAuthorize("@tripService.canDeleteItineraryItem(#itemId, authentication.principal.id)")
+    @PreAuthorize("@securityEvaluator.canDeleteItineraryItem(#itemId, authentication.principal.id)")
     @DeleteMapping("/{itemId}")
     public ResponseEntity<String> deleteItineraryItem(@PathVariable final Long itemId) {
         itineraryService.deleteItineraryItem(itemId);

@@ -226,46 +226,4 @@ public class TripService implements ITripService {
                         modelMapper.map(request.getUser(), UserDto.class))
                 .collect(Collectors.toSet());
     }
-
-    @Override
-    public boolean isOrganizer(Long tripId, Long userId) {
-        return tripRepository.findById(tripId)
-                .map(trip -> trip.getOrganizer().getId().equals(userId))
-                .orElse(false);
-    }
-
-    @Override
-    public boolean isOrganizerForExpense(Long expenseId, Long userId) {
-        return expenseRepository.findById(expenseId)
-                .map(expense -> expense.getTrip().getOrganizer().getId().equals(userId))
-                .orElse(false);
-    }
-
-    @Override
-    public boolean canDeleteChecklistItem(final Long itemId, final Long userId) {
-        return packingChecklistRepository.findById(itemId)
-                .map(item -> {
-                    // Check if user is the item owner
-                    if (item.getUser() != null && item.getUser().getId().equals(userId)) {
-                        return true;
-                    }
-                    // Check if user is the trip organizer
-                    return item.getTrip().getOrganizer().getId().equals(userId);
-                })
-                .orElse(false);
-    }
-
-    @Override
-    public boolean canDeleteItineraryItem(final Long itemId, final Long userId) {
-        return itineraryRepository.findById(itemId)
-                .map(item -> {
-                    // Check if user is the item owner
-                    if (item.getUser() != null && item.getUser().getId().equals(userId)) {
-                        return true;
-                    }
-                    // Check if user is the trip organizer
-                    return item.getTrip().getOrganizer().getId().equals(userId);
-                })
-                .orElse(false);
-    }
 }

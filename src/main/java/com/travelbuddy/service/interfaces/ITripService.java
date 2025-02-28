@@ -20,8 +20,4 @@ public interface ITripService {
     void declineJoinRequest(final Long tripId, final Long userId);
     void kickMember(final Long tripId, final Long memberId);
     Set<UserDto> getJoinRequests(final Long tripId);
-    boolean isOrganizer(final Long tripId, final Long userId);
-    boolean isOrganizerForExpense(final Long expenseId, final Long userId);
-    boolean canDeleteChecklistItem(final Long itemId, final Long userId);
-    boolean canDeleteItineraryItem(final Long itemId, final Long userId);
 }
